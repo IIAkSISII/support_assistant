@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"github.com/IIAkSISII/support-assistant/internal/llm"
 	"github.com/IIAkSISII/support-assistant/internal/model"
 	"github.com/IIAkSISII/support-assistant/internal/repository/history"
 	"github.com/IIAkSISII/support-assistant/internal/repository/knowledge"
@@ -14,10 +15,6 @@ const (
 	defaultReply        = "Я передам ваше обращение оператору. Он изучит проблему и поможет вам."
 )
 
-type Analyzer interface {
-	Analyze(ctx context.Context, request model.AnalysisRequest) (model.AnalysisResult, error)
-}
-
 type Processor interface {
 	Process(ctx context.Context, incoming model.IncomingMessage) (model.ProcessResult, error)
 }
@@ -25,14 +22,14 @@ type Processor interface {
 type MessageProcessor struct {
 	history      history.HistoryRepository
 	knowledge    knowledge.KnowledgeRepository
-	analyzer     Analyzer
+	analyzer     llm.Analyzer
 	historyLimit int
 }
 
 func NewMessageProcessor(
 	history history.HistoryRepository,
 	knowledge knowledge.KnowledgeRepository,
-	analyzer Analyzer,
+	analyzer llm.Analyzer,
 	historyLimit int,
 ) *MessageProcessor {
 	if historyLimit <= 0 {
