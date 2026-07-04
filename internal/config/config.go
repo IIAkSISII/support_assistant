@@ -12,6 +12,8 @@ import (
 const (
 	defaultHTTPAddr          = ":8080"
 	defaultKnowledgeBasePath = "internal/repository/knowledge/testdata/knowledge_base.json"
+	defaultLogLevel          = "info"
+	defaultLogFormat         = "json"
 )
 
 type Config struct {
@@ -19,6 +21,7 @@ type Config struct {
 	LLM       LLMConfig
 	Knowledge KnowledgeConfig
 	History   HistoryConfig
+	Logger    LoggerConfig
 }
 
 type HTTPConfig struct {
@@ -38,6 +41,11 @@ type KnowledgeConfig struct {
 
 type HistoryConfig struct {
 	Limit int
+}
+
+type LoggerConfig struct {
+	Level  string
+	Format string
 }
 
 func Load() (Config, error) {
@@ -66,6 +74,10 @@ func Load() (Config, error) {
 		},
 		History: HistoryConfig{
 			Limit: historyLimit,
+		},
+		Logger: LoggerConfig{
+			Level:  getEnv("LOG_LEVEL", defaultLogLevel),
+			Format: getEnv("LOG_FORMAT", defaultLogFormat),
 		},
 	}
 

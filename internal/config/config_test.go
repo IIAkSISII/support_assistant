@@ -14,6 +14,8 @@ func TestLoad_UsesDefaultValues(t *testing.T) {
 	t.Setenv("DEEPSEEK_MAX_TOKENS", "")
 	t.Setenv("KNOWLEDGE_BASE_PATH", "")
 	t.Setenv("HISTORY_LIMIT", "")
+	t.Setenv("LOG_LEVEL", "")
+	t.Setenv("LOG_FORMAT", "")
 
 	cfg, err := Load()
 	if err != nil {
@@ -46,6 +48,14 @@ func TestLoad_UsesDefaultValues(t *testing.T) {
 
 	if cfg.History.Limit != appdefaults.HistoryLimit {
 		t.Errorf("expected history limit %d, got %d", appdefaults.HistoryLimit, cfg.History.Limit)
+	}
+	
+	if cfg.Logger.Level != defaultLogLevel {
+		t.Errorf("expected log level %q, got %q", defaultLogLevel, cfg.Logger.Level)
+	}
+
+	if cfg.Logger.Format != defaultLogFormat {
+		t.Errorf("expected log format %q, got %q", defaultLogFormat, cfg.Logger.Format)
 	}
 }
 
