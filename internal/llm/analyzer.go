@@ -6,17 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/IIAkSISII/support-assistant/internal/appdefaults"
 	"github.com/IIAkSISII/support-assistant/internal/model"
 	"io"
 	"net/http"
 	"strings"
 	"time"
-)
-
-const (
-	defaultBaseURL   = "https://api.deepseek.com"
-	defaultModel     = "deepseek-v4-flash"
-	defaultMaxTokens = 1000
 )
 
 type Analyzer interface {
@@ -45,15 +40,15 @@ func NewAnalyzer(config Config) (*DeepSeekAnalyzer, error) {
 	}
 
 	if config.BaseURL == "" {
-		config.BaseURL = defaultBaseURL
+		config.BaseURL = appdefaults.DeepSeekBaseURL
 	}
 
 	if config.Model == "" {
-		config.Model = defaultModel
+		config.Model = appdefaults.DeepSeekModel
 	}
 
 	if config.MaxTokens <= 0 {
-		config.MaxTokens = defaultMaxTokens
+		config.MaxTokens = appdefaults.DeepSeekMaxTokens
 	}
 
 	if config.HTTPClient == nil {

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"github.com/IIAkSISII/support-assistant/internal/appdefaults"
 	"github.com/IIAkSISII/support-assistant/internal/llm"
 	"github.com/IIAkSISII/support-assistant/internal/model"
 	"github.com/IIAkSISII/support-assistant/internal/repository/history"
@@ -9,10 +10,9 @@ import (
 )
 
 const (
-	defaultHistoryLimit = 10
-	roleUser            = "user"
-	roleBot             = "bot"
-	defaultReply        = "Я передам ваше обращение оператору. Он изучит проблему и поможет вам."
+	roleUser     = "user"
+	roleBot      = "bot"
+	defaultReply = "Я передам ваше обращение оператору. Он изучит проблему и поможет вам."
 )
 
 type Processor interface {
@@ -33,7 +33,7 @@ func NewMessageProcessor(
 	historyLimit int,
 ) *MessageProcessor {
 	if historyLimit <= 0 {
-		historyLimit = defaultHistoryLimit
+		historyLimit = appdefaults.HistoryLimit
 	}
 	return &MessageProcessor{
 		history:      history,
