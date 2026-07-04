@@ -10,6 +10,7 @@ import (
 
 type KnowledgeRepository interface {
 	FindAnswer(category string, keywords []string) (string, bool)
+	GetEntries() []model.Entry
 }
 
 type JsonRepository struct {
@@ -34,6 +35,20 @@ func NewJsonRepository(path string) (*JsonRepository, error) {
 	return &JsonRepository{
 		entries: entries,
 	}, nil
+}
+
+func (j *JsonRepository) GetEntries() []model.Entry {
+	entries := make([]model.Entry, len(j.entries))
+
+	for i, entry := range j.entries {
+		entries[i] = model.Entry{
+			Category: entry.Category,
+			Keywords: append([]string(nil), entry.Keywords...),
+			Answer:   entry.Answer,
+		}
+	}
+
+	return entries
 }
 
 func (j *JsonRepository) FindAnswer(category string, keywords []string) (string, bool) {
