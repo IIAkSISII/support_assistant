@@ -1,0 +1,256 @@
+{
+    "consumes": [
+        "application/json"
+    ],
+    "schemes": [
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "Webhook для классификации запросов в поддержку, выбора готовых ответов и подготовки контекста эскалации для операторов.",
+        "title": "Ассистент поддержки",
+        "contact": {},
+        "version": "1.0"
+    },
+    "basePath": "/",
+    "paths": {
+        "/webhook": {
+            "post": {
+                "description": "Принимает одно входящее событие webhook, классифицирует сообщение в поддержку, выбирает готовый ответ из базы знаний и при необходимости подготавливает контекст для эскалации оператору.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "webhook"
+                ],
+                "summary": "Обработка webhook-запроса поддержки",
+                "parameters": [
+                    {
+                        "description": "Тело входящего webhook-запроса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.WebhookRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ProcessResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "405": {
+                        "description": "Method Not Allowed",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handler.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Invalid JSON"
+                }
+            }
+        },
+        "handler.WebhookAttachment": {
+            "type": "object",
+            "properties": {
+                "file_type": {
+                    "type": "string",
+                    "example": "image/png"
+                },
+                "file_url": {
+                    "type": "string",
+                    "example": "https://example.com/files/1001.png"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1001
+                },
+                "thumb_url": {
+                    "type": "string",
+                    "example": "https://example.com/files/1001-thumb.png"
+                }
+            }
+        },
+        "handler.WebhookConversation": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 789
+                },
+                "priority": {
+                    "type": "string",
+                    "example": "medium"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "open"
+                }
+            }
+        },
+        "handler.WebhookInbox": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Support"
+                }
+            }
+        },
+        "handler.WebhookRequest": {
+            "type": "object",
+            "properties": {
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handler.WebhookAttachment"
+                    }
+                },
+                "content": {
+                    "type": "string",
+                    "example": "Я оплатил подписку, но доступ не появился"
+                },
+                "conversation": {
+                    "$ref": "#/definitions/handler.WebhookConversation"
+                },
+                "event": {
+                    "type": "string",
+                    "example": "message_created"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 123
+                },
+                "inbox": {
+                    "$ref": "#/definitions/handler.WebhookInbox"
+                },
+                "message_type": {
+                    "type": "string",
+                    "example": "incoming"
+                },
+                "private": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "sender": {
+                    "$ref": "#/definitions/handler.WebhookSender"
+                }
+            }
+        },
+        "handler.WebhookSender": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "anton88@example.com"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 456
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Anton"
+                },
+                "type": {
+                    "type": "string",
+                    "example": "user"
+                }
+            }
+        },
+        "model.Message": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.OperatorContext": {
+            "type": "object",
+            "properties": {
+                "dialog_history": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Message"
+                    }
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "suggest_action": {
+                    "type": "string"
+                },
+                "summary": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.ProcessResult": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "dialog_id": {
+                    "type": "string"
+                },
+                "escalate": {
+                    "type": "boolean"
+                },
+                "keywords": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "operator_context": {
+                    "$ref": "#/definitions/model.OperatorContext"
+                },
+                "priority": {
+                    "type": "string"
+                },
+                "reply": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

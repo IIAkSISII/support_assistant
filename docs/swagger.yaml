@@ -1,0 +1,176 @@
+basePath: /
+consumes:
+- application/json
+definitions:
+  handler.ErrorResponse:
+    properties:
+      error:
+        example: Invalid JSON
+        type: string
+    type: object
+  handler.WebhookAttachment:
+    properties:
+      file_type:
+        example: image/png
+        type: string
+      file_url:
+        example: https://example.com/files/1001.png
+        type: string
+      id:
+        example: 1001
+        type: integer
+      thumb_url:
+        example: https://example.com/files/1001-thumb.png
+        type: string
+    type: object
+  handler.WebhookConversation:
+    properties:
+      id:
+        example: 789
+        type: integer
+      priority:
+        example: medium
+        type: string
+      status:
+        example: open
+        type: string
+    type: object
+  handler.WebhookInbox:
+    properties:
+      id:
+        example: 10
+        type: integer
+      name:
+        example: Support
+        type: string
+    type: object
+  handler.WebhookRequest:
+    properties:
+      attachments:
+        items:
+          $ref: '#/definitions/handler.WebhookAttachment'
+        type: array
+      content:
+        example: Я оплатил подписку, но доступ не появился
+        type: string
+      conversation:
+        $ref: '#/definitions/handler.WebhookConversation'
+      event:
+        example: message_created
+        type: string
+      id:
+        example: 123
+        type: integer
+      inbox:
+        $ref: '#/definitions/handler.WebhookInbox'
+      message_type:
+        example: incoming
+        type: string
+      private:
+        example: false
+        type: boolean
+      sender:
+        $ref: '#/definitions/handler.WebhookSender'
+    type: object
+  handler.WebhookSender:
+    properties:
+      email:
+        example: anton88@example.com
+        type: string
+      id:
+        example: 456
+        type: integer
+      name:
+        example: Anton
+        type: string
+      type:
+        example: user
+        type: string
+    type: object
+  model.Message:
+    properties:
+      content:
+        type: string
+      role:
+        type: string
+    type: object
+  model.OperatorContext:
+    properties:
+      dialog_history:
+        items:
+          $ref: '#/definitions/model.Message'
+        type: array
+      reason:
+        type: string
+      suggest_action:
+        type: string
+      summary:
+        type: string
+    type: object
+  model.ProcessResult:
+    properties:
+      category:
+        type: string
+      dialog_id:
+        type: string
+      escalate:
+        type: boolean
+      keywords:
+        items:
+          type: string
+        type: array
+      operator_context:
+        $ref: '#/definitions/model.OperatorContext'
+      priority:
+        type: string
+      reply:
+        type: string
+      user_id:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: Webhook для классификации запросов в поддержку, выбора готовых ответов
+    и подготовки контекста эскалации для операторов.
+  title: Ассистент поддержки
+  version: "1.0"
+paths:
+  /webhook:
+    post:
+      consumes:
+      - application/json
+      description: Принимает одно входящее событие webhook, классифицирует сообщение
+        в поддержку, выбирает готовый ответ из базы знаний и при необходимости подготавливает
+        контекст для эскалации оператору.
+      parameters:
+      - description: Тело входящего webhook-запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.WebhookRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.ProcessResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Обработка webhook-запроса поддержки
+      tags:
+      - webhook
+schemes:
+- http
+swagger: "2.0"

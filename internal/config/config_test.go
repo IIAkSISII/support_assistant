@@ -49,7 +49,7 @@ func TestLoad_UsesDefaultValues(t *testing.T) {
 	if cfg.History.Limit != appdefaults.HistoryLimit {
 		t.Errorf("expected history limit %d, got %d", appdefaults.HistoryLimit, cfg.History.Limit)
 	}
-	
+
 	if cfg.Logger.Level != defaultLogLevel {
 		t.Errorf("expected log level %q, got %q", defaultLogLevel, cfg.Logger.Level)
 	}
