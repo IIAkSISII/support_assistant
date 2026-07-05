@@ -81,6 +81,19 @@ const docTemplate = `{
                 }
             }
         },
+        "handler.WebhookAccount": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "type": "string",
+                    "example": "My Account"
+                }
+            }
+        },
         "handler.WebhookAttachment": {
             "type": "object",
             "properties": {
@@ -135,6 +148,9 @@ const docTemplate = `{
         "handler.WebhookRequest": {
             "type": "object",
             "properties": {
+                "account": {
+                    "$ref": "#/definitions/handler.WebhookAccount"
+                },
                 "attachments": {
                     "type": "array",
                     "items": {

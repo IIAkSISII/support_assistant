@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	_ "github.com/IIAkSISII/support-assistant/docs"
+	"github.com/IIAkSISII/support-assistant/internal/client"
 	"github.com/IIAkSISII/support-assistant/internal/config"
 	"github.com/IIAkSISII/support-assistant/internal/handler"
 	"github.com/IIAkSISII/support-assistant/internal/llm"
@@ -76,7 +77,19 @@ func run() error {
 		cfg.History.Limit,
 	)
 
-	webhookHandler := handler.NewWebhookHandler(processor, logger)
+	var resultSender client.Sender
+
+	if cfg.Chatwoot.Enabled {
+		resultSender, err = client.NewMessageSender(client.Config{
+			BaseURL:        cfg.Chatwoot.BaseURL,
+			APIAccessToken: cfg.Chatwoot.APIAccessToken,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	webhookHandler := handler.NewWebhookHandlerWithSender(processor, resultSender, logger)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/webhook", webhookHandler.HandleWebhook)

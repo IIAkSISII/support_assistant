@@ -45,7 +45,7 @@ func NewMessageProcessor(
 
 func (mp *MessageProcessor) Process(ctx context.Context, incoming model.IncomingMessage) (model.ProcessResult, error) {
 	userMessage := model.Message{
-		Role:    roleUser, // потом наверное лучше заменить на то, что роль приходит от СпросиИИ, а не хардкод
+		Role:    roleUser,
 		Content: incoming.Message,
 	}
 

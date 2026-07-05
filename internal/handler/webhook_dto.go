@@ -7,6 +7,7 @@ type WebhookRequest struct {
 	MessageType  string              `json:"message_type" example:"incoming"`
 	Private      bool                `json:"private" example:"false"`
 	Sender       WebhookSender       `json:"sender"`
+	Account      WebhookAccount      `json:"account"`
 	Conversation WebhookConversation `json:"conversation"`
 	Inbox        WebhookInbox        `json:"inbox"`
 	Attachments  []WebhookAttachment `json:"attachments"`
@@ -17,6 +18,11 @@ type WebhookSender struct {
 	Name  string `json:"name" example:"Anton"`
 	Email string `json:"email" example:"anton88@example.com"`
 	Type  string `json:"type" example:"user"`
+}
+
+type WebhookAccount struct {
+	ID   int64  `json:"id" example:"1"`
+	Name string `json:"name" example:"My Account"`
 }
 
 type WebhookConversation struct {

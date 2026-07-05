@@ -1,18 +1,22 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
+	"github.com/IIAkSISII/support-assistant/internal/client"
 	"github.com/IIAkSISII/support-assistant/internal/model"
 	"github.com/IIAkSISII/support-assistant/internal/service"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type WebhookHandler struct {
 	processor service.Processor
 	logger    *slog.Logger
+	sender    client.Sender
 }
 
 func NewWebhookHandler(processor service.Processor, logger ...*slog.Logger) *WebhookHandler {
@@ -23,6 +27,17 @@ func NewWebhookHandler(processor service.Processor, logger ...*slog.Logger) *Web
 	}
 
 	return &WebhookHandler{processor: processor, logger: l}
+}
+
+func NewWebhookHandlerWithSender(
+	processor service.Processor,
+	sender client.Sender,
+	logger ...*slog.Logger,
+) *WebhookHandler {
+	handler := NewWebhookHandler(processor, logger...)
+	handler.sender = sender
+
+	return handler
 }
 
 // @Summary		Обработка webhook-запроса поддержки
@@ -196,7 +211,51 @@ func (j *WebhookHandler) HandleWebhook(w http.ResponseWriter, r *http.Request) {
 		"escalate", result.Escalate,
 	)
 
+	j.sendProcessResultToExternalAPI(r.Context(), request, result)
+
 	writeJSON(w, http.StatusOK, result)
+}
+
+func (j *WebhookHandler) sendProcessResultToExternalAPI(
+	ctx context.Context,
+	request WebhookRequest,
+	result model.ProcessResult,
+) {
+	if j.sender == nil {
+		return
+	}
+
+	accountID := request.Account.ID
+	if accountID == 0 {
+		j.logger.Warn(
+			"process result delivery skipped",
+			"reason", "account id is missing",
+			"message_id", request.ID,
+			"conversation_id", request.Conversation.ID,
+		)
+		return
+	}
+
+	sendCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	if err := j.sender.SendProcessResult(sendCtx, accountID, request.Conversation.ID, result); err != nil {
+		j.logger.Error(
+			"process result delivery failed",
+			"error", err.Error(),
+			"message_id", request.ID,
+			"account_id", accountID,
+			"conversation_id", request.Conversation.ID,
+		)
+		return
+	}
+
+	j.logger.Info(
+		"process result delivered",
+		"message_id", request.ID,
+		"account_id", accountID,
+		"conversation_id", request.Conversation.ID,
+	)
 }
 
 func writeJSON(w http.ResponseWriter, statusCode int, data any) {

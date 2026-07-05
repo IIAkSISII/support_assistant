@@ -8,6 +8,15 @@ definitions:
         example: Invalid JSON
         type: string
     type: object
+  handler.WebhookAccount:
+    properties:
+      id:
+        example: 1
+        type: integer
+      name:
+        example: My Account
+        type: string
+    type: object
   handler.WebhookAttachment:
     properties:
       file_type:
@@ -46,6 +55,8 @@ definitions:
     type: object
   handler.WebhookRequest:
     properties:
+      account:
+        $ref: '#/definitions/handler.WebhookAccount'
       attachments:
         items:
           $ref: '#/definitions/handler.WebhookAttachment'

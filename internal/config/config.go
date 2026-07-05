@@ -22,6 +22,7 @@ type Config struct {
 	Knowledge KnowledgeConfig
 	History   HistoryConfig
 	Logger    LoggerConfig
+	Chatwoot  ChatwootConfig
 }
 
 type HTTPConfig struct {
@@ -48,6 +49,12 @@ type LoggerConfig struct {
 	Format string
 }
 
+type ChatwootConfig struct {
+	Enabled        bool
+	BaseURL        string
+	APIAccessToken string
+}
+
 func Load() (Config, error) {
 	deepSeekMaxTokens, err := getEnvInt("DEEPSEEK_MAX_TOKENS", appdefaults.DeepSeekMaxTokens)
 	if err != nil {
@@ -55,6 +62,11 @@ func Load() (Config, error) {
 	}
 
 	historyLimit, err := getEnvInt("HISTORY_LIMIT", appdefaults.HistoryLimit)
+	if err != nil {
+		return Config{}, err
+	}
+
+	chatwootEnabled, err := getEnvBool("CHATWOOT_ENABLED", false)
 	if err != nil {
 		return Config{}, err
 	}
@@ -79,10 +91,18 @@ func Load() (Config, error) {
 			Level:  getEnv("LOG_LEVEL", defaultLogLevel),
 			Format: getEnv("LOG_FORMAT", defaultLogFormat),
 		},
+		Chatwoot: ChatwootConfig{
+			Enabled:        chatwootEnabled,
+			BaseURL:        getEnv("CHATWOOT_BASE_URL", "https://guiai-test.ru"),
+			APIAccessToken: getEnv("CHATWOOT_API_ACCESS_TOKEN", ""),
+		},
 	}
 
 	if config.LLM.APIKey == "" {
 		return Config{}, errors.New("DEEPSEEK_API_KEY is required")
+	}
+	if config.Chatwoot.Enabled && config.Chatwoot.APIAccessToken == "" {
+		return Config{}, errors.New("CHATWOOT_API_ACCESS_TOKEN is required when ENABLED=true")
 	}
 
 	return config, nil
@@ -112,5 +132,19 @@ func getEnvInt(key string, defaultValue int) (int, error) {
 		return 0, fmt.Errorf("%s must be positive", key)
 	}
 
+	return parsed, nil
+}
+
+func getEnvBool(key string, defaultValue bool) (bool, error) {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return defaultValue, nil
+	}
+
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return false, fmt.Errorf("%s must be boolean: %w", key, err)
+	}
+	
 	return parsed, nil
 }
