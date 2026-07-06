@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	roleUser     = "user"
-	roleBot      = "bot"
-	defaultReply = "Я передам ваше обращение оператору. Он изучит проблему и поможет вам."
+	roleUser                  = "user"
+	roleBot                   = "bot"
+	defaultClarificationReply = "Здравствуйте! Опишите, пожалуйста, с чем нужна помощь."
+	defaultEscalationReply    = "Я передам ваше обращение оператору. Специалист проверит информацию и поможет вам."
 )
 
 type Processor interface {
@@ -71,10 +72,14 @@ func (mp *MessageProcessor) Process(ctx context.Context, incoming model.Incoming
 
 	reply, found := mp.knowledge.FindAnswer(analysis.Category, analysis.Keywords)
 
-	shouldEscalate := !found || analysis.Escalate
+	shouldEscalate := analysis.Escalate
 
-	if !found {
-		reply = defaultReply
+	switch {
+	case shouldEscalate:
+		reply = defaultEscalationReply
+	case found:
+	default:
+		reply = defaultClarificationReply
 	}
 
 	botMessage := model.Message{

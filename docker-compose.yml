@@ -7,4 +7,45 @@ services:
       - .env
     ports:
       - "8090:8090"
+    depends_on:
+      ollama-pull:
+        condition: service_completed_successfully
     restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    expose:
+      - "11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  ollama-pull:
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    command: ["pull", "qwen3:4b-instruct"]
+
+  test:
+    image: golang:1.25-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+    command: go test ./...
+    profiles:
+      - test
+
+volumes:
+  go-mod-cache:
+  go-build-cache:
+  ollama-data:

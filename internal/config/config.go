@@ -30,10 +30,11 @@ type HTTPConfig struct {
 }
 
 type LLMConfig struct {
-	APIKey    string
-	BaseURL   string
-	Model     string
-	MaxTokens int
+	APIKey         string
+	BaseURL        string
+	Model          string
+	MaxTokens      int
+	TimeoutSeconds int
 }
 
 type KnowledgeConfig struct {
@@ -56,12 +57,17 @@ type ChatwootConfig struct {
 }
 
 func Load() (Config, error) {
-	deepSeekMaxTokens, err := getEnvInt("DEEPSEEK_MAX_TOKENS", appdefaults.DeepSeekMaxTokens)
+	deepSeekMaxTokens, err := getEnvInt("LLM_MAX_TOKENS", appdefaults.LLMmaxTokens)
 	if err != nil {
 		return Config{}, err
 	}
 
 	historyLimit, err := getEnvInt("HISTORY_LIMIT", appdefaults.HistoryLimit)
+	if err != nil {
+		return Config{}, err
+	}
+
+	llmTimeoutSeconds, err := getEnvInt("LLM_TIMEOUT_SECONDS", 60)
 	if err != nil {
 		return Config{}, err
 	}
@@ -76,10 +82,11 @@ func Load() (Config, error) {
 			Addr: getEnv("HTTP_ADDR", defaultHTTPAddr),
 		},
 		LLM: LLMConfig{
-			APIKey:    getEnv("DEEPSEEK_API_KEY", ""),
-			BaseURL:   getEnv("DEEPSEEK_BASE_URL", appdefaults.DeepSeekBaseURL),
-			Model:     getEnv("DEEPSEEK_MODEL", appdefaults.DeepSeekModel),
-			MaxTokens: deepSeekMaxTokens,
+			APIKey:         getEnv("LLM_API_KEY", ""),
+			BaseURL:        getEnv("LLM_BASE_URL", appdefaults.LLMbaseURL),
+			Model:          getEnv("LLM_MODEL", appdefaults.LLMmodel),
+			MaxTokens:      deepSeekMaxTokens,
+			TimeoutSeconds: llmTimeoutSeconds,
 		},
 		Knowledge: KnowledgeConfig{
 			Path: getEnv("KNOWLEDGE_BASE_PATH", defaultKnowledgeBasePath),
@@ -99,7 +106,7 @@ func Load() (Config, error) {
 	}
 
 	if config.LLM.APIKey == "" {
-		return Config{}, errors.New("DEEPSEEK_API_KEY is required")
+		return Config{}, errors.New("LLM_MODEL is required")
 	}
 	if config.Chatwoot.Enabled && config.Chatwoot.APIAccessToken == "" {
 		return Config{}, errors.New("CHATWOOT_API_ACCESS_TOKEN is required when ENABLED=true")

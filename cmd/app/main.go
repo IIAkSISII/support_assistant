@@ -65,6 +65,9 @@ func run() error {
 		BaseURL:   cfg.LLM.BaseURL,
 		Model:     cfg.LLM.Model,
 		MaxTokens: cfg.LLM.MaxTokens,
+		HTTPClient: &http.Client{
+			Timeout: time.Duration(cfg.LLM.TimeoutSeconds) * time.Second,
+		},
 	})
 	if err != nil {
 		return err

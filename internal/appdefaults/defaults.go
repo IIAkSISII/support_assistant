@@ -1,8 +1,8 @@
 package appdefaults
 
 const (
-	DeepSeekBaseURL   = "https://api.deepseek.com"
-	DeepSeekModel     = "deepseek-v4-flash"
-	DeepSeekMaxTokens = 1000
-	HistoryLimit      = 10
+	LLMbaseURL   = "https://api.deepseek.com"
+	LLMmodel     = "deepseek-v4-flash"
+	LLMmaxTokens = 2000
+	HistoryLimit = 10
 )

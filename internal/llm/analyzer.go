@@ -26,7 +26,7 @@ type Config struct {
 	HTTPClient *http.Client
 }
 
-type DeepSeekAnalyzer struct {
+type LLMAnalyzer struct {
 	apiKey     string
 	baseURL    string
 	model      string
@@ -34,30 +34,30 @@ type DeepSeekAnalyzer struct {
 	httpClient *http.Client
 }
 
-func NewAnalyzer(config Config) (*DeepSeekAnalyzer, error) {
+func NewAnalyzer(config Config) (*LLMAnalyzer, error) {
 	if config.APIKey == "" {
 		return nil, errors.New("deepseek api key is required")
 	}
 
 	if config.BaseURL == "" {
-		config.BaseURL = appdefaults.DeepSeekBaseURL
+		config.BaseURL = appdefaults.LLMbaseURL
 	}
 
 	if config.Model == "" {
-		config.Model = appdefaults.DeepSeekModel
+		config.Model = appdefaults.LLMmodel
 	}
 
 	if config.MaxTokens <= 0 {
-		config.MaxTokens = appdefaults.DeepSeekMaxTokens
+		config.MaxTokens = appdefaults.LLMmaxTokens
 	}
 
 	if config.HTTPClient == nil {
 		config.HTTPClient = &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 60 * time.Second,
 		}
 	}
 
-	return &DeepSeekAnalyzer{
+	return &LLMAnalyzer{
 		apiKey:     config.APIKey,
 		baseURL:    strings.TrimRight(config.BaseURL, "/"),
 		model:      config.Model,
@@ -66,7 +66,7 @@ func NewAnalyzer(config Config) (*DeepSeekAnalyzer, error) {
 	}, nil
 }
 
-func (a *DeepSeekAnalyzer) Analyze(ctx context.Context, request model.AnalysisRequest) (model.AnalysisResult, error) {
+func (a *LLMAnalyzer) Analyze(ctx context.Context, request model.AnalysisRequest) (model.AnalysisResult, error) {
 	messages, err := buildMessages(request)
 	if err != nil {
 		return model.AnalysisResult{}, err
@@ -171,7 +171,7 @@ func parseAnalysisResult(content string) (model.AnalysisResult, error) {
 		result.Category = "unknown"
 	}
 	switch result.Priority {
-	case "low", "medium", "high":
+	case "low", "medium", "high", "critical":
 	default:
 		result.Priority = "medium"
 	}
@@ -209,39 +209,62 @@ type chatChoice struct {
 }
 
 const systemPrompt = `
-Ты анализатор обращений в службу поддержки.
+Ты классификатор и маршрутизатор обращений в службу поддержки.
 
-Верни только валидный json-объект без markdown, пояснений и дополнительного текста.
+Верни только один валидный JSON-объект.
+Не пиши markdown, пояснения или текст вне JSON.
+Не добавляй поля вне схемы.
 
-Твоя задача:
-- определить category обращения;
-- выбрать keywords;
-- определить priority: low, medium или high;
-- определить, нужна ли передача оператору;
-- подготовить summary, reason и suggest_action для оператора.
+Ты НЕ отвечаешь пользователю.
+Ты НЕ придумываешь факты о системе.
+Ты только анализируешь обращение и решаешь, нужен ли оператор.
 
-Важные правила:
-- Не формируй ответ пользователю.
-- Не придумывай факты о внутренней системе проекта.
-- Используй knowledge_entries как список допустимых категорий, ключевых слов и готовых ответов.
-- Если сообщение подходит под одну из записей knowledge_entries, используй category из этой записи.
-- Category выбирай только из category, которые есть в knowledge_entries.
+Используй knowledge_entries для выбора category и keywords.
+Наличие записи в knowledge_entries НЕ означает, что обращение можно закрыть без оператора.
+
+category:
+- выбирай только из knowledge_entries.category;
+- если подходящей категории нет, верни "unknown";
+
+keywords:
+- всегда массив строк;
 - Keywords по возможности выбирай из keywords подходящей записи knowledge_entries. Можно выбрать один или несколько keywords, если они действительно соответствуют сообщению пользователя.
-- Если категория не определяется, верни category = "unknown".
-- Если нет подходящего готового ответа, вопрос сложный, связан с проверкой оплаты, доступом, личными данными, админ-панелью или требует действий сотрудника, ставь escalate = true.
-- Если обращение типовое и есть подходящая запись knowledge_entries, ставь escalate = false.
-- summary должно кратко описывать суть обращения.
+- если нет подходящих, верни [].
+
+escalate:
+- true, если требуется проверка сотрудником;
+- true, если обращение связано с проблемой оплаты, платежа, подписки, списания, возврата или доступа после оплаты;
+- true, если пользователь сообщает, что действие не сработало: оплата не прошла, доступ не появился, пароль не восстанавливается, ошибка повторяется;
+- true, если пользователь прислал email, номер платежа, чек, transaction id, номер заказа, скриншот или другие данные для проверки;
+- true, если нужно проверить аккаунт, платеж, доступ, личные данные, админ-панель или внутреннее состояние системы;
+- true, если нет точного готового ответа или обращение неоднозначное;
+- false только для простого типового информационного вопроса, который можно безопасно закрыть готовым ответом;
+- если сомневаешься, ставь true.
+
+priority:
+- low: простой информационный вопрос;
+- medium: обычная проблема без полной блокировки;
+- high: проблема с оплатой, доступом, аккаунтом, подпиской или требуется проверка сотрудником;
+- critical: массовый сбой, недоступность сервиса, безопасность, потеря данных или массовый финансовый инцидент.
+
+summary:
+- кратко опиши суть обращения.
+
+reason:
 - reason должно объяснять, почему нужна или не нужна передача оператору.
-- suggest_action должно описывать, что оператору сделать дальше, если escalate = true. Если escalate = false, можно вернуть пустую строку.
+
+suggest_action:
+- если escalate = true, напиши конкретное действие для оператора. Действие должно объяснять, что именно проверить, запросить или сделать дальше.
+- если escalate = false, верни "".
 
 Верни json строго такого вида:
 {
-  "category": "payment",
-  "priority": "high",
-  "keywords": ["оплата", "подписка"],
-  "escalate": true,
-  "summary": "Пользователь оплатил подписку, но доступ не появился.",
-  "reason": "Требуется проверка платежа и статуса подписки.",
-  "suggest_action": "Проверить платеж пользователя и статус подписки в админ-панели."
+  "category": "<category или unknown>",
+  "priority": "<low|medium|high|critical>",
+  "keywords": ["<keyword>"],
+  "escalate": false,
+  "summary": "<краткое описание>",
+  "reason": "<причина решения>",
+  "suggest_action": "<действие для оператора или пустая строка>"
 }
 `
