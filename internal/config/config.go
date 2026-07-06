@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	defaultHTTPAddr          = ":8080"
+	defaultHTTPAddr          = ":8090"
 	defaultKnowledgeBasePath = "internal/repository/knowledge/testdata/knowledge_base.json"
 	defaultLogLevel          = "info"
 	defaultLogFormat         = "json"
@@ -145,6 +145,6 @@ func getEnvBool(key string, defaultValue bool) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("%s must be boolean: %w", key, err)
 	}
-	
+
 	return parsed, nil
 }
