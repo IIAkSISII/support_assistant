@@ -10,10 +10,13 @@ import (
 )
 
 const (
-	defaultHTTPAddr          = ":8090"
-	defaultKnowledgeBasePath = "internal/repository/knowledge/testdata/knowledge_base.json"
-	defaultLogLevel          = "info"
-	defaultLogFormat         = "json"
+	defaultHTTPAddr              = ":8090"
+	defaultKnowledgeBasePath     = "internal/repository/knowledge/testdata/knowledge_base.json"
+	defaultLogLevel              = "info"
+	defaultLogFormat             = "json"
+	defaultRedisAddr             = "redis:6379"
+	defaultRedisKeyPrefix        = "support_assistant:history"
+	defaultRedisOperationTimeout = 3
 )
 
 type Config struct {
@@ -23,6 +26,7 @@ type Config struct {
 	History   HistoryConfig
 	Logger    LoggerConfig
 	Chatwoot  ChatwootConfig
+	Redis     RedisConfig
 }
 
 type HTTPConfig struct {
@@ -56,6 +60,14 @@ type ChatwootConfig struct {
 	APIAccessToken string
 }
 
+type RedisConfig struct {
+	Addr                    string
+	Password                string
+	DB                      int
+	KeyPrefix               string
+	OperationTimeoutSeconds int
+}
+
 func Load() (Config, error) {
 	deepSeekMaxTokens, err := getEnvInt("LLM_MAX_TOKENS", appdefaults.LLMmaxTokens)
 	if err != nil {
@@ -73,6 +85,16 @@ func Load() (Config, error) {
 	}
 
 	chatwootEnabled, err := getEnvBool("CHATWOOT_ENABLED", false)
+	if err != nil {
+		return Config{}, err
+	}
+
+	redisDB, err := getEnvNonNegativeInt("REDIS_DB", 0)
+	if err != nil {
+		return Config{}, err
+	}
+
+	redisOperationTimeoutSeconds, err := getEnvInt("REDIS_OPERATION_TIMEOUT_SECONDS", defaultRedisOperationTimeout)
 	if err != nil {
 		return Config{}, err
 	}
@@ -103,6 +125,13 @@ func Load() (Config, error) {
 			BaseURL:        getEnv("CHATWOOT_BASE_URL", "https://guiai-test.ru"),
 			APIAccessToken: getEnv("CHATWOOT_API_ACCESS_TOKEN", ""),
 		},
+		Redis: RedisConfig{
+			Addr:                    getEnv("REDIS_ADDR", defaultRedisAddr),
+			Password:                getEnv("REDIS_PASSWORD", ""),
+			DB:                      redisDB,
+			KeyPrefix:               getEnv("REDIS_KEY_PREFIX", defaultRedisKeyPrefix),
+			OperationTimeoutSeconds: redisOperationTimeoutSeconds,
+		},
 	}
 
 	if config.LLM.APIKey == "" {
@@ -122,6 +151,24 @@ func getEnv(key string, defaultValue string) string {
 	}
 
 	return value
+}
+
+func getEnvNonNegativeInt(key string, defaultValue int) (int, error) {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return defaultValue, nil
+	}
+
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return 0, fmt.Errorf("%s must be integer: %w", key, err)
+	}
+
+	if parsed < 0 {
+		return 0, fmt.Errorf("%s must be non-negative", key)
+	}
+
+	return parsed, nil
 }
 
 func getEnvInt(key string, defaultValue int) (int, error) {

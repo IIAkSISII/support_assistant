@@ -8,8 +8,24 @@ services:
     ports:
       - "8090:8090"
     depends_on:
+      redis:
+        condition: service_healthy
       ollama-pull:
         condition: service_completed_successfully
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: [ "redis-server", "--appendonly", "yes" ]
+    expose:
+      - "6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     restart: unless-stopped
 
   ollama:
@@ -49,3 +65,4 @@ volumes:
   go-mod-cache:
   go-build-cache:
   ollama-data:
+  redis-data:

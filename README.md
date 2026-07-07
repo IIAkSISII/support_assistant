@@ -8,7 +8,7 @@
 
 - принимает входящие события `message_created`;
 - отбрасывает неподходящие события, исходящие и приватные сообщения;
-- хранит историю диалога в памяти для передачи контекста в анализатор;
+- хранит историю диалога в Redis для передачи контекста в анализатор;
 - отправляет сообщение, историю и базу знаний в LLM;
 - получает классификацию: `category`, `priority`, `keywords`, `escalate`;
 - ищет готовый ответ в JSON-базе знаний;
@@ -24,11 +24,9 @@
 - [internal/service/processor.go](internal/service/processor.go) - основная бизнес-логика обработки сообщения.
 - [internal/llm/analyzer.go](internal/llm/analyzer.go) - клиент к LLM через OpenAI-compatible `/chat/completions`.
 - [internal/repository/knowledge/knowledge.repository.go](internal/repository/knowledge/knowledge.repository.go) - загрузка и поиск ответов в JSON-базе знаний.
-- [internal/repository/history/history.repository.go](internal/repository/history/history.repository.go) - in-memory история диалогов.
+- [internal/repository/history/redis.repository.go](internal/repository/history/redis.repository.go) - хранение истории диалогов в Redis.
 - [internal/client/chatwoot.go](internal/client/chatwoot.go) - отправка результата обратно в Chatwoot.
 - [docs/swagger.yaml](docs/swagger.yaml) - описание API Swagger.
-
-История диалога хранится только в памяти процесса. После перезапуска контейнера или приложения накопленный контекст исчезает.
 
 ## Требования
 
@@ -57,6 +55,11 @@
 - `LLM_MAX_TOKENS` - максимальное количество токенов, которое модель может сгенерировать в ответе
 - `LLM_TIMEOUT_SECONDS` - таймаут запроса к модели
 - `HISTORY_LIMIT` - сколько последних сообщений передавать в анализатор
+- `REDIS_ADDR` - адрес Redis, например redis:6379 внутри Docker Compose или localhost:6379 при локальном запуске
+- `REDIS_PASSWORD` - пароль Redis, если он настроен. Оставьте пустым, если Redis запущен без пароля.
+- `REDIS_DB` - номер логической базы Redis, по умолчанию 0
+- `REDIS_KEY_PREFIX` - префикс ключей Redis для истории диалогов
+- `REDIS_OPERATION_TIMEOUT_SECONDS` - таймаут операций Redis
 - `CHATWOOT_ENABLED` - включить/выключить отправку результата обратно в Chatwoot
 - `CHATWOOT_BASE_URL` - адрес Chatwoot API
 - `CHATWOOT_API_ACCESS_TOKEN` - токен Chatwoot
@@ -200,6 +203,7 @@ docker compose logs -f api
 - подготовка `operator_context` при эскалации;
 - передача оператору краткого summary, причины эскалации, рекомендуемого действия и истории диалога;
 - взаимодействие `api` с локальной моделью через внутреннюю Docker-сеть;
+- взаимодействие api с Redis через внутреннюю Docker-сеть;
 - опциональная отправка результата обработки во внешний Chatwoot;
 - структурированные логи через `slog`;
 - Swagger-документация;
@@ -208,9 +212,6 @@ docker compose logs -f api
 
 ## Ограничения текущей реализации
 
-- история диалогов хранится только в памяти процесса;
-- после перезапуска приложения или контейнера история диалога теряется;
-- при запуске нескольких экземпляров `api` у каждого экземпляра будет своя отдельная история;
 - база знаний статическая и хранится в JSON-файле;
 - изменение базы знаний требует обновления файла и перезапуска сервиса;
 - качество классификации зависит от выбранной модели, промпта и содержимого базы знаний;

@@ -13,6 +13,7 @@ import (
 	"github.com/IIAkSISII/support-assistant/internal/repository/history"
 	"github.com/IIAkSISII/support-assistant/internal/repository/knowledge"
 	"github.com/IIAkSISII/support-assistant/internal/service"
+	"github.com/redis/go-redis/v9"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"log/slog"
 	"net/http"
@@ -53,7 +54,26 @@ func run() error {
 
 	slog.SetDefault(logger)
 
-	historyRepository := history.NewHistoryRepository()
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     cfg.Redis.Addr,
+		Password: cfg.Redis.Password,
+		DB:       cfg.Redis.DB,
+	})
+
+	defer func() {
+		if err := redisClient.Close(); err != nil {
+			logger.Warn("redis close failed", "error", err.Error())
+		}
+	}()
+
+	historyRepository, err := history.NewHistoryRedisRepository(redisClient, history.RedisConfig{
+		KeyPrefix:        cfg.Redis.KeyPrefix,
+		MaxMessages:      cfg.History.Limit,
+		OperationTimeout: time.Duration(cfg.Redis.OperationTimeoutSeconds) * time.Second,
+	})
+	if err != nil {
+		return err
+	}
 
 	knowledgeRepository, err := knowledge.NewJsonRepository(cfg.Knowledge.Path)
 	if err != nil {
