@@ -8,10 +8,10 @@ import (
 
 func TestLoad_UsesDefaultValues(t *testing.T) {
 	t.Setenv("HTTP_ADDR", "")
-	t.Setenv("DEEPSEEK_API_KEY", "test-api-key")
-	t.Setenv("DEEPSEEK_BASE_URL", "")
-	t.Setenv("DEEPSEEK_MODEL", "")
-	t.Setenv("DEEPSEEK_MAX_TOKENS", "")
+	t.Setenv("LLM_API_KEY", "test-api-key")
+	t.Setenv("LLM_BASE_URL", "")
+	t.Setenv("LLM_MODEL", "")
+	t.Setenv("LLM_MAX_TOKENS", "")
 	t.Setenv("KNOWLEDGE_BASE_PATH", "")
 	t.Setenv("HISTORY_LIMIT", "")
 	t.Setenv("LOG_LEVEL", "")
@@ -30,16 +30,16 @@ func TestLoad_UsesDefaultValues(t *testing.T) {
 		t.Errorf("expected deepseek api key test-api-key, got %q", cfg.LLM.APIKey)
 	}
 
-	if cfg.LLM.BaseURL != appdefaults.DeepSeekBaseURL {
-		t.Errorf("expected deepseek base url %q, got %q", appdefaults.DeepSeekBaseURL, cfg.LLM.BaseURL)
+	if cfg.LLM.BaseURL != appdefaults.LLMbaseURL {
+		t.Errorf("expected deepseek base url %q, got %q", appdefaults.LLMbaseURL, cfg.LLM.BaseURL)
 	}
 
-	if cfg.LLM.Model != appdefaults.DeepSeekModel {
-		t.Errorf("expected deepseek model %q, got %q", appdefaults.DeepSeekModel, cfg.LLM.Model)
+	if cfg.LLM.Model != appdefaults.LLMmodel {
+		t.Errorf("expected deepseek model %q, got %q", appdefaults.LLMmodel, cfg.LLM.Model)
 	}
 
-	if cfg.LLM.MaxTokens != appdefaults.DeepSeekMaxTokens {
-		t.Errorf("expected deepseek max tokens %d, got %d", appdefaults.DeepSeekMaxTokens, cfg.LLM.MaxTokens)
+	if cfg.LLM.MaxTokens != appdefaults.LLMmaxTokens {
+		t.Errorf("expected deepseek max tokens %d, got %d", appdefaults.LLMmaxTokens, cfg.LLM.MaxTokens)
 	}
 
 	if cfg.Knowledge.Path != defaultKnowledgeBasePath {
@@ -61,10 +61,10 @@ func TestLoad_UsesDefaultValues(t *testing.T) {
 
 func TestLoad_UsesEnvValues(t *testing.T) {
 	t.Setenv("HTTP_ADDR", ":9000")
-	t.Setenv("DEEPSEEK_API_KEY", "real-api-key")
-	t.Setenv("DEEPSEEK_BASE_URL", "https://custom.deepseek.example.com")
-	t.Setenv("DEEPSEEK_MODEL", "deepseek-reasoner")
-	t.Setenv("DEEPSEEK_MAX_TOKENS", "2048")
+	t.Setenv("LLM_API_KEY", "real-api-key")
+	t.Setenv("LLM_BASE_URL", "https://custom.deepseek.example.com")
+	t.Setenv("LLM_MODEL", "deepseek-reasoner")
+	t.Setenv("LLM_MAX_TOKENS", "2048")
 	t.Setenv("KNOWLEDGE_BASE_PATH", "./data/knowledge_base.json")
 	t.Setenv("HISTORY_LIMIT", "25")
 
@@ -102,12 +102,12 @@ func TestLoad_UsesEnvValues(t *testing.T) {
 	}
 }
 
-func TestLoad_ReturnsErrorWhenDeepSeekAPIKeyIsMissing(t *testing.T) {
+func TestLoad_ReturnsErrorWhenLLMAPIKeyIsMissing(t *testing.T) {
 	t.Setenv("HTTP_ADDR", "")
-	t.Setenv("DEEPSEEK_API_KEY", "")
-	t.Setenv("DEEPSEEK_BASE_URL", "")
-	t.Setenv("DEEPSEEK_MODEL", "")
-	t.Setenv("DEEPSEEK_MAX_TOKENS", "")
+	t.Setenv("LLM_API_KEY", "")
+	t.Setenv("LLM_BASE_URL", "")
+	t.Setenv("LLM_MODEL", "")
+	t.Setenv("LLM_MAX_TOKENS", "")
 	t.Setenv("KNOWLEDGE_BASE_PATH", "")
 	t.Setenv("HISTORY_LIMIT", "")
 
@@ -116,42 +116,42 @@ func TestLoad_ReturnsErrorWhenDeepSeekAPIKeyIsMissing(t *testing.T) {
 		t.Fatal("expected error")
 	}
 
-	if !strings.Contains(err.Error(), "DEEPSEEK_API_KEY is required") {
+	if !strings.Contains(err.Error(), "LLM_API_KEY is required") {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
 
-func TestLoad_ReturnsErrorWhenDeepSeekMaxTokensIsInvalid(t *testing.T) {
-	t.Setenv("DEEPSEEK_API_KEY", "test-api-key")
-	t.Setenv("DEEPSEEK_MAX_TOKENS", "invalid")
+func TestLoad_ReturnsErrorWhenLLMMaxTokensIsInvalid(t *testing.T) {
+	t.Setenv("LLM_API_KEY", "test-api-key")
+	t.Setenv("LLM_MAX_TOKENS", "invalid")
 
 	_, err := Load()
 	if err == nil {
 		t.Fatal("expected error")
 	}
 
-	if !strings.Contains(err.Error(), "DEEPSEEK_MAX_TOKENS must be integer") {
+	if !strings.Contains(err.Error(), "LLM_MAX_TOKENS must be integer") {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
 
-func TestLoad_ReturnsErrorWhenDeepSeekMaxTokensIsNotPositive(t *testing.T) {
-	t.Setenv("DEEPSEEK_API_KEY", "test-api-key")
-	t.Setenv("DEEPSEEK_MAX_TOKENS", "0")
+func TestLoad_ReturnsErrorWhenLLMMaxTokensIsNotPositive(t *testing.T) {
+	t.Setenv("LLM_API_KEY", "test-api-key")
+	t.Setenv("LLM_MAX_TOKENS", "0")
 
 	_, err := Load()
 	if err == nil {
 		t.Fatal("expected error")
 	}
 
-	if !strings.Contains(err.Error(), "DEEPSEEK_MAX_TOKENS must be positive") {
+	if !strings.Contains(err.Error(), "LLM_MAX_TOKENS must be positive") {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
 
 func TestLoad_ReturnsErrorWhenHistoryLimitIsInvalid(t *testing.T) {
-	t.Setenv("DEEPSEEK_API_KEY", "test-api-key")
-	t.Setenv("DEEPSEEK_MAX_TOKENS", "")
+	t.Setenv("LLM_API_KEY", "test-api-key")
+	t.Setenv("LLM_MAX_TOKENS", "")
 	t.Setenv("HISTORY_LIMIT", "invalid")
 
 	_, err := Load()
@@ -165,8 +165,8 @@ func TestLoad_ReturnsErrorWhenHistoryLimitIsInvalid(t *testing.T) {
 }
 
 func TestLoad_ReturnsErrorWhenHistoryLimitIsNotPositive(t *testing.T) {
-	t.Setenv("DEEPSEEK_API_KEY", "test-api-key")
-	t.Setenv("DEEPSEEK_MAX_TOKENS", "")
+	t.Setenv("LLM_API_KEY", "test-api-key")
+	t.Setenv("LLM_MAX_TOKENS", "")
 	t.Setenv("HISTORY_LIMIT", "-1")
 
 	_, err := Load()

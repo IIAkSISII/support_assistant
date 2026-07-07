@@ -189,7 +189,7 @@ func TestProcessor_UsesKnowledgeBaseAnswer(t *testing.T) {
 	}
 }
 
-func TestProcessor_EscalatesWhenKnowledgeBaseAnswerNotFound(t *testing.T) {
+func TestProcessor_UsesClarificationReplyWhenKnowledgeBaseAnswerNotFound(t *testing.T) {
 	historyRepo := &fakeHistoryRepository{}
 
 	knowledgeRepo := &fakeKnowledgeRepository{
@@ -219,40 +219,16 @@ func TestProcessor_EscalatesWhenKnowledgeBaseAnswerNotFound(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if !result.Escalate {
-		t.Error("expected escalate to be true")
+	if result.Escalate {
+		t.Error("expected escalate to be false")
 	}
 
-	if result.Reply != defaultReply {
-		t.Errorf("expected default reply, got %s", result.Reply)
+	if result.Reply != defaultClarificationReply {
+		t.Errorf("expected clarification reply, got %s", result.Reply)
 	}
 
-	if result.OperatorContext == nil {
-		t.Fatal("expected operator context")
-	}
-
-	if result.OperatorContext.Summary != analyzer.result.Summary {
-		t.Errorf("expected summary %q, got %q", analyzer.result.Summary, result.OperatorContext.Summary)
-	}
-
-	if result.OperatorContext.Reason != analyzer.result.Reason {
-		t.Errorf("expected reason %q, got %q", analyzer.result.Reason, result.OperatorContext.Reason)
-	}
-
-	if result.OperatorContext.SuggestAction != analyzer.result.SuggestAction {
-		t.Errorf("expected suggest action %q, got %q", analyzer.result.SuggestAction, result.OperatorContext.SuggestAction)
-	}
-
-	if len(result.OperatorContext.DialogHistory) != 2 {
-		t.Fatalf("expected 2 messages in operator history, got %d", len(result.OperatorContext.DialogHistory))
-	}
-
-	if result.OperatorContext.DialogHistory[0].Role != roleUser {
-		t.Errorf("expected first operator history role user, got %s", result.OperatorContext.DialogHistory[0].Role)
-	}
-
-	if result.OperatorContext.DialogHistory[1].Role != roleBot {
-		t.Errorf("expected second operator history role bot, got %s", result.OperatorContext.DialogHistory[1].Role)
+	if result.OperatorContext != nil {
+		t.Fatal("expected operator context to be nil")
 	}
 }
 
@@ -291,8 +267,8 @@ func TestProcessor_EscalatesWhenAnalyzerRequiresEscalation(t *testing.T) {
 		t.Error("expected escalate to be true")
 	}
 
-	if result.Reply != knowledgeRepo.answer {
-		t.Errorf("expected knowledge base reply, got %s", result.Reply)
+	if result.Reply != defaultEscalationReply {
+		t.Errorf("expected escalation reply, got %s", result.Reply)
 	}
 
 	if result.OperatorContext == nil {

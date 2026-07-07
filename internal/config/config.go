@@ -106,7 +106,7 @@ func Load() (Config, error) {
 	}
 
 	if config.LLM.APIKey == "" {
-		return Config{}, errors.New("LLM_MODEL is required")
+		return Config{}, errors.New("LLM_API_KEY is required")
 	}
 	if config.Chatwoot.Enabled && config.Chatwoot.APIAccessToken == "" {
 		return Config{}, errors.New("CHATWOOT_API_ACCESS_TOKEN is required when ENABLED=true")

@@ -109,8 +109,8 @@ func TestAnalyze_UsesDefaultConfigurationAndParsesSuccessfulResponse(t *testing.
 		t.Fatalf("expected default model, got %#v", gotBody["model"])
 	}
 
-	if gotBody["max_tokens"] != float64(1000) {
-		t.Fatalf("expected default max_tokens 1000, got %#v", gotBody["max_tokens"])
+	if gotBody["max_tokens"] != float64(2000) {
+		t.Fatalf("expected default max_tokens 2000, got %#v", gotBody["max_tokens"])
 	}
 
 	if gotBody["stream"] != false {
