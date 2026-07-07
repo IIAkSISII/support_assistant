@@ -13,7 +13,7 @@
 - получает классификацию: `category`, `priority`, `keywords`, `escalate`;
 - ищет готовый ответ в JSON-базе знаний;
 - возвращает итоговый `ProcessResult` и при необходимости добавляет `operator_context` для оператора;
-- опционально отправляет результат обратно во внешнюю систему через API Chatwoot.
+- опционально отправляет результат обратно во внешнюю систему через API платформы поддержки.
 
 ## Как устроен сервис
 
@@ -25,7 +25,7 @@
 - [internal/llm/analyzer.go](internal/llm/analyzer.go) - клиент к LLM через OpenAI-compatible `/chat/completions`.
 - [internal/repository/knowledge/knowledge.repository.go](internal/repository/knowledge/knowledge.repository.go) - загрузка и поиск ответов в JSON-базе знаний.
 - [internal/repository/history/redis.repository.go](internal/repository/history/redis.repository.go) - хранение истории диалогов в Redis.
-- [internal/client/chatwoot.go](internal/client/chatwoot.go) - отправка результата обратно в Chatwoot.
+- [internal/client/support_platform.go](internal/client/support_platform.go) - отправка результата обратно в платформу поддержки.
 - [docs/swagger.yaml](docs/swagger.yaml) - описание API Swagger.
 
 ## Требования
@@ -60,9 +60,9 @@
 - `REDIS_DB` - номер логической базы Redis, по умолчанию 0
 - `REDIS_KEY_PREFIX` - префикс ключей Redis для истории диалогов
 - `REDIS_OPERATION_TIMEOUT_SECONDS` - таймаут операций Redis
-- `CHATWOOT_ENABLED` - включить/выключить отправку результата обратно в Chatwoot
-- `CHATWOOT_BASE_URL` - адрес Chatwoot API
-- `CHATWOOT_API_ACCESS_TOKEN` - токен Chatwoot
+- `SUPPORT_PLATFORM_ENABLED` - включить/выключить отправку результата обратно во внешнюю платформу поддержки
+- `SUPPORT_PLATFORM_BASE_URL` - базовый адрес API внешней платформы поддержки
+- `SUPPORT_PLATFORM_API_ACCESS_TOKEN` - токен API внешней платформы поддержки
 - `LOG_LEVEL` — уровень логирования: `debug`, `info`, `warn`, `error`.
 - `LOG_FORMAT` — формат логов: `json` или `text`.
 
@@ -206,7 +206,7 @@ docker compose logs -f api
 - передача оператору краткого summary, причины эскалации, рекомендуемого действия и истории диалога;
 - взаимодействие `api` с локальной моделью через внутреннюю Docker-сеть;
 - взаимодействие api с Redis через внутреннюю Docker-сеть;
-- опциональная отправка результата обработки во внешний Chatwoot;
+- опциональная отправка результата обработки во внешний сервис;
 - структурированные логи через `slog`;
 - Swagger-документация;
 - контейнерный запуск через Docker Compose;

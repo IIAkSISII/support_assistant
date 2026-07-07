@@ -112,10 +112,10 @@ func run() error {
 
 	var resultSender client.Sender
 
-	if cfg.Chatwoot.Enabled {
+	if cfg.SupportPlatform.Enabled {
 		resultSender, err = client.NewMessageSender(client.Config{
-			BaseURL:        cfg.Chatwoot.BaseURL,
-			APIAccessToken: cfg.Chatwoot.APIAccessToken,
+			BaseURL:        cfg.SupportPlatform.BaseURL,
+			APIAccessToken: cfg.SupportPlatform.APIAccessToken,
 		})
 		if err != nil {
 			return err

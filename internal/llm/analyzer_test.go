@@ -12,6 +12,8 @@ import (
 	"testing"
 )
 
+const testSystemPrompt = "You are a support assistant analyzer. Return JSON only."
+
 func TestNewAnalyzer_RequiresAPIKey(t *testing.T) {
 	analyzer, err := NewAnalyzer(Config{})
 	if err == nil {
@@ -77,8 +79,9 @@ func TestAnalyze_UsesDefaultConfigurationAndParsesSuccessfulResponse(t *testing.
 	defer server.Close()
 
 	analyzer, err := NewAnalyzer(Config{
-		APIKey:  "secret-token",
-		BaseURL: server.URL + "/",
+		APIKey:       "secret-token",
+		BaseURL:      server.URL + "/",
+		SystemPrompt: testSystemPrompt,
 	})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -233,9 +236,10 @@ func TestAnalyze_ReturnsErrorWhenProviderReturnsNonSuccessStatus(t *testing.T) {
 	defer server.Close()
 
 	analyzer, err := NewAnalyzer(Config{
-		APIKey:     "secret-token",
-		BaseURL:    server.URL,
-		HTTPClient: server.Client(),
+		APIKey:       "secret-token",
+		BaseURL:      server.URL,
+		HTTPClient:   server.Client(),
+		SystemPrompt: testSystemPrompt,
 	})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -263,9 +267,10 @@ func TestAnalyze_ReturnsErrorWhenResponseHasNoChoices(t *testing.T) {
 	defer server.Close()
 
 	analyzer, err := NewAnalyzer(Config{
-		APIKey:     "secret-token",
-		BaseURL:    server.URL,
-		HTTPClient: server.Client(),
+		APIKey:       "secret-token",
+		BaseURL:      server.URL,
+		HTTPClient:   server.Client(),
+		SystemPrompt: testSystemPrompt,
 	})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -303,9 +308,10 @@ func TestAnalyze_ReturnsErrorWhenProviderStopsForUnexpectedReason(t *testing.T) 
 	defer server.Close()
 
 	analyzer, err := NewAnalyzer(Config{
-		APIKey:     "secret-token",
-		BaseURL:    server.URL,
-		HTTPClient: server.Client(),
+		APIKey:       "secret-token",
+		BaseURL:      server.URL,
+		HTTPClient:   server.Client(),
+		SystemPrompt: testSystemPrompt,
 	})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -343,9 +349,10 @@ func TestAnalyze_ReturnsErrorWhenResponseContentIsEmpty(t *testing.T) {
 	defer server.Close()
 
 	analyzer, err := NewAnalyzer(Config{
-		APIKey:     "secret-token",
-		BaseURL:    server.URL,
-		HTTPClient: server.Client(),
+		APIKey:       "secret-token",
+		BaseURL:      server.URL,
+		HTTPClient:   server.Client(),
+		SystemPrompt: testSystemPrompt,
 	})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -383,9 +390,10 @@ func TestAnalyze_ReturnsErrorWhenModelResponseIsNotValidJSON(t *testing.T) {
 	defer server.Close()
 
 	analyzer, err := NewAnalyzer(Config{
-		APIKey:     "secret-token",
-		BaseURL:    server.URL,
-		HTTPClient: server.Client(),
+		APIKey:       "secret-token",
+		BaseURL:      server.URL,
+		HTTPClient:   server.Client(),
+		SystemPrompt: testSystemPrompt,
 	})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)

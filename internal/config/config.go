@@ -20,13 +20,13 @@ const (
 )
 
 type Config struct {
-	HTTP      HTTPConfig
-	LLM       LLMConfig
-	Knowledge KnowledgeConfig
-	History   HistoryConfig
-	Logger    LoggerConfig
-	Chatwoot  ChatwootConfig
-	Redis     RedisConfig
+	HTTP            HTTPConfig
+	LLM             LLMConfig
+	Knowledge       KnowledgeConfig
+	History         HistoryConfig
+	Logger          LoggerConfig
+	SupportPlatform SupportPlatformConfig
+	Redis           RedisConfig
 }
 
 type HTTPConfig struct {
@@ -55,7 +55,7 @@ type LoggerConfig struct {
 	Format string
 }
 
-type ChatwootConfig struct {
+type SupportPlatformConfig struct {
 	Enabled        bool
 	BaseURL        string
 	APIAccessToken string
@@ -85,7 +85,7 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
-	chatwootEnabled, err := getEnvBool("CHATWOOT_ENABLED", false)
+	supportPlatformEnabled, err := getEnvBool("SUPPORT_PLATFORM_ENABLED", false)
 	if err != nil {
 		return Config{}, err
 	}
@@ -122,10 +122,10 @@ func Load() (Config, error) {
 			Level:  getEnv("LOG_LEVEL", defaultLogLevel),
 			Format: getEnv("LOG_FORMAT", defaultLogFormat),
 		},
-		Chatwoot: ChatwootConfig{
-			Enabled:        chatwootEnabled,
-			BaseURL:        getEnv("CHATWOOT_BASE_URL", "https://guiai-test.ru"),
-			APIAccessToken: getEnv("CHATWOOT_API_ACCESS_TOKEN", ""),
+		SupportPlatform: SupportPlatformConfig{
+			Enabled:        supportPlatformEnabled,
+			BaseURL:        getEnv("SUPPORT_PLATFORM_BASE_URL", "https://guiai-test.ru"),
+			APIAccessToken: getEnv("SUPPORT_PLATFORM_API_ACCESS_TOKEN", ""),
 		},
 		Redis: RedisConfig{
 			Addr:                    getEnv("REDIS_ADDR", defaultRedisAddr),
@@ -139,8 +139,8 @@ func Load() (Config, error) {
 	if config.LLM.APIKey == "" {
 		return Config{}, errors.New("LLM_API_KEY is required")
 	}
-	if config.Chatwoot.Enabled && config.Chatwoot.APIAccessToken == "" {
-		return Config{}, errors.New("CHATWOOT_API_ACCESS_TOKEN is required when ENABLED=true")
+	if config.SupportPlatform.Enabled && config.SupportPlatform.APIAccessToken == "" {
+		return Config{}, errors.New("SUPPORT_PLATFORM_API_ACCESS_TOKEN is required when SUPPORT_PLATFORM_ENABLED=true")
 	}
 
 	return config, nil

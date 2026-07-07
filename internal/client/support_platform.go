@@ -41,11 +41,11 @@ func NewMessageSender(config Config) (*MessageSender, error) {
 	httpClient := config.HTTPClient
 
 	if baseUrl == "" {
-		return nil, errors.New("chatwoot base url is required")
+		return nil, errors.New("support platform base url is required")
 	}
 
 	if apiAccessToken == "" {
-		return nil, errors.New("chatwoot api access token is required")
+		return nil, errors.New("support platform api access token is required")
 	}
 
 	if httpClient == nil {
@@ -89,7 +89,7 @@ func (s *MessageSender) SendProcessResult(
 
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return fmt.Errorf("marshal chatwoot message request: %w", err)
+		return fmt.Errorf("marshal support platform message request: %w", err)
 	}
 
 	url := fmt.Sprintf("%s/api/v1/accounts/%d/conversations/%d/messages",
@@ -100,7 +100,7 @@ func (s *MessageSender) SendProcessResult(
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return fmt.Errorf("create chatwoot request: %w", err)
+		return fmt.Errorf("create support platform request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -108,17 +108,17 @@ func (s *MessageSender) SendProcessResult(
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("send chatwoot request: %w", err)
+		return fmt.Errorf("send support platform request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("read chatwoot response body: %w", err)
+		return fmt.Errorf("read support platform response body: %w", err)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("chatwoot response code %d: %s", resp.StatusCode, string(respBody))
+		return fmt.Errorf("support platform response code %d: %s", resp.StatusCode, string(respBody))
 	}
 
 	return nil
