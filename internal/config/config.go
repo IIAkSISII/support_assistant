@@ -34,11 +34,12 @@ type HTTPConfig struct {
 }
 
 type LLMConfig struct {
-	APIKey         string
-	BaseURL        string
-	Model          string
-	MaxTokens      int
-	TimeoutSeconds int
+	APIKey           string
+	BaseURL          string
+	Model            string
+	MaxTokens        int
+	TimeoutSeconds   int
+	SystemPromptPath string
 }
 
 type KnowledgeConfig struct {
@@ -104,11 +105,12 @@ func Load() (Config, error) {
 			Addr: getEnv("HTTP_ADDR", defaultHTTPAddr),
 		},
 		LLM: LLMConfig{
-			APIKey:         getEnv("LLM_API_KEY", ""),
-			BaseURL:        getEnv("LLM_BASE_URL", appdefaults.LLMbaseURL),
-			Model:          getEnv("LLM_MODEL", appdefaults.LLMmodel),
-			MaxTokens:      deepSeekMaxTokens,
-			TimeoutSeconds: llmTimeoutSeconds,
+			APIKey:           getEnv("LLM_API_KEY", ""),
+			BaseURL:          getEnv("LLM_BASE_URL", appdefaults.LLMbaseURL),
+			Model:            getEnv("LLM_MODEL", appdefaults.LLMmodel),
+			MaxTokens:        deepSeekMaxTokens,
+			TimeoutSeconds:   llmTimeoutSeconds,
+			SystemPromptPath: getEnv("SYSTEM_PROMPT_PATH", "prompts/system.md"),
 		},
 		Knowledge: KnowledgeConfig{
 			Path: getEnv("KNOWLEDGE_BASE_PATH", defaultKnowledgeBasePath),

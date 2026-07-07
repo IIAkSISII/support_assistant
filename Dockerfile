@@ -17,6 +17,7 @@ WORKDIR /app
 
 COPY --from=builder /app/server ./server
 COPY --from=builder /app/internal/repository/knowledge/testdata ./internal/repository/knowledge/testdata
+COPY --from=builder /app/prompts /app/prompts
 
 EXPOSE 8090
 

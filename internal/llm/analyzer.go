@@ -9,6 +9,7 @@ import (
 	"github.com/IIAkSISII/support-assistant/internal/appdefaults"
 	"github.com/IIAkSISII/support-assistant/internal/model"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -19,19 +20,23 @@ type Analyzer interface {
 }
 
 type Config struct {
-	APIKey     string
-	BaseURL    string
-	Model      string
-	MaxTokens  int
-	HTTPClient *http.Client
+	APIKey       string
+	BaseURL      string
+	Model        string
+	MaxTokens    int
+	SystemPrompt string
+	HTTPClient   *http.Client
+	Logger       *slog.Logger
 }
 
 type LLMAnalyzer struct {
-	apiKey     string
-	baseURL    string
-	model      string
-	maxTokens  int
-	httpClient *http.Client
+	apiKey       string
+	baseURL      string
+	model        string
+	maxTokens    int
+	systemPrompt string
+	httpClient   *http.Client
+	logger       *slog.Logger
 }
 
 func NewAnalyzer(config Config) (*LLMAnalyzer, error) {
@@ -51,23 +56,35 @@ func NewAnalyzer(config Config) (*LLMAnalyzer, error) {
 		config.MaxTokens = appdefaults.LLMmaxTokens
 	}
 
+	if strings.TrimSpace(config.SystemPrompt) == "" {
+		return nil, errors.New("system prompt is required")
+	}
+
 	if config.HTTPClient == nil {
 		config.HTTPClient = &http.Client{
 			Timeout: 60 * time.Second,
 		}
 	}
 
+	if config.Logger == nil {
+		config.Logger = slog.Default()
+	}
+
 	return &LLMAnalyzer{
-		apiKey:     config.APIKey,
-		baseURL:    strings.TrimRight(config.BaseURL, "/"),
-		model:      config.Model,
-		maxTokens:  config.MaxTokens,
-		httpClient: config.HTTPClient,
+		apiKey:       config.APIKey,
+		baseURL:      strings.TrimRight(config.BaseURL, "/"),
+		model:        config.Model,
+		maxTokens:    config.MaxTokens,
+		systemPrompt: config.SystemPrompt,
+		httpClient:   config.HTTPClient,
+		logger:       config.Logger,
 	}, nil
 }
 
 func (a *LLMAnalyzer) Analyze(ctx context.Context, request model.AnalysisRequest) (model.AnalysisResult, error) {
-	messages, err := buildMessages(request)
+	startedAt := time.Now()
+
+	messages, err := a.buildMessages(request)
 	if err != nil {
 		return model.AnalysisResult{}, err
 	}
@@ -135,10 +152,23 @@ func (a *LLMAnalyzer) Analyze(ctx context.Context, request model.AnalysisRequest
 		return model.AnalysisResult{}, fmt.Errorf("parse analysis result: %w", err)
 	}
 
+	a.logger.Info(
+		"llm analysis completed",
+		"model", a.model,
+		"duration_ms", time.Since(startedAt).Milliseconds(),
+		"status", httpResp.StatusCode,
+		"request_size_bytes", len(payload),
+		"response_size_bytes", len(responseBody),
+		"finish_reason", choice.FinishReason,
+		"prompt_tokens", chatResponse.Usage.PromptTokens,
+		"completion_tokens", chatResponse.Usage.CompletionTokens,
+		"total_tokens", chatResponse.Usage.TotalTokens,
+	)
+
 	return analysis, nil
 }
 
-func buildMessages(request model.AnalysisRequest) ([]chatMessage, error) {
+func (a *LLMAnalyzer) buildMessages(request model.AnalysisRequest) ([]chatMessage, error) {
 	userPrompt, err := json.MarshalIndent(request, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("marshal analysis request: %w", err)
@@ -146,7 +176,7 @@ func buildMessages(request model.AnalysisRequest) ([]chatMessage, error) {
 	return []chatMessage{
 		{
 			Role:    "system",
-			Content: systemPrompt,
+			Content: a.systemPrompt,
 		},
 		{
 			Role:    "user",
@@ -200,71 +230,17 @@ type responseFormat struct {
 }
 
 type chatCompletionResponse struct {
-	Choices []chatChoice `json:"choices"`
+	Choices []chatChoice        `json:"choices"`
+	Usage   chatCompletionUsage `json:"usage"`
+}
+
+type chatCompletionUsage struct {
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+	TotalTokens      int `json:"total_tokens"`
 }
 
 type chatChoice struct {
 	FinishReason string      `json:"finish_reason"`
 	Message      chatMessage `json:"message"`
 }
-
-const systemPrompt = `
-Ты классификатор и маршрутизатор обращений в службу поддержки.
-
-Верни только один валидный JSON-объект.
-Не пиши markdown, пояснения или текст вне JSON.
-Не добавляй поля вне схемы.
-
-Ты НЕ отвечаешь пользователю.
-Ты НЕ придумываешь факты о системе.
-Ты только анализируешь обращение и решаешь, нужен ли оператор.
-
-Используй knowledge_entries для выбора category и keywords.
-Наличие записи в knowledge_entries НЕ означает, что обращение можно закрыть без оператора.
-
-category:
-- выбирай только из knowledge_entries.category;
-- если подходящей категории нет, верни "unknown";
-
-keywords:
-- всегда массив строк;
-- Keywords по возможности выбирай из keywords подходящей записи knowledge_entries. Можно выбрать один или несколько keywords, если они действительно соответствуют сообщению пользователя.
-- если нет подходящих, верни [].
-
-escalate:
-- true, если требуется проверка сотрудником;
-- true, если обращение связано с проблемой оплаты, платежа, подписки, списания, возврата или доступа после оплаты;
-- true, если пользователь сообщает, что действие не сработало: оплата не прошла, доступ не появился, пароль не восстанавливается, ошибка повторяется;
-- true, если пользователь прислал email, номер платежа, чек, transaction id, номер заказа, скриншот или другие данные для проверки;
-- true, если нужно проверить аккаунт, платеж, доступ, личные данные, админ-панель или внутреннее состояние системы;
-- true, если нет точного готового ответа или обращение неоднозначное;
-- false только для простого типового информационного вопроса, который можно безопасно закрыть готовым ответом;
-- если сомневаешься, ставь true.
-
-priority:
-- low: простой информационный вопрос;
-- medium: обычная проблема без полной блокировки;
-- high: проблема с оплатой, доступом, аккаунтом, подпиской или требуется проверка сотрудником;
-- critical: массовый сбой, недоступность сервиса, безопасность, потеря данных или массовый финансовый инцидент.
-
-summary:
-- кратко опиши суть обращения.
-
-reason:
-- reason должно объяснять, почему нужна или не нужна передача оператору.
-
-suggest_action:
-- если escalate = true, напиши конкретное действие для оператора. Действие должно объяснять, что именно проверить, запросить или сделать дальше.
-- если escalate = false, верни "".
-
-Верни json строго такого вида:
-{
-  "category": "<category или unknown>",
-  "priority": "<low|medium|high|critical>",
-  "keywords": ["<keyword>"],
-  "escalate": false,
-  "summary": "<краткое описание>",
-  "reason": "<причина решения>",
-  "suggest_action": "<действие для оператора или пустая строка>"
-}
-`

@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -80,14 +81,23 @@ func run() error {
 		return err
 	}
 
+	systemPromptBytes, err := os.ReadFile(cfg.LLM.SystemPromptPath)
+	if err != nil {
+		return err
+	}
+
+	systemPrompt := strings.TrimSpace(string(systemPromptBytes))
+
 	analyzer, err := llm.NewAnalyzer(llm.Config{
-		APIKey:    cfg.LLM.APIKey,
-		BaseURL:   cfg.LLM.BaseURL,
-		Model:     cfg.LLM.Model,
-		MaxTokens: cfg.LLM.MaxTokens,
+		APIKey:       cfg.LLM.APIKey,
+		BaseURL:      cfg.LLM.BaseURL,
+		Model:        cfg.LLM.Model,
+		MaxTokens:    cfg.LLM.MaxTokens,
+		SystemPrompt: systemPrompt,
 		HTTPClient: &http.Client{
 			Timeout: time.Duration(cfg.LLM.TimeoutSeconds) * time.Second,
 		},
+		Logger: logger,
 	})
 	if err != nil {
 		return err
